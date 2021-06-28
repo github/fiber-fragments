@@ -1,0 +1,10 @@
+{
+  "name": "github/fiber-fragments",
+  "forwardPorts": [8080],
+  "appPort": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "web"
+    }
+  }
+}
