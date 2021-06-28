@@ -23,9 +23,6 @@ var client = fasthttp.Client{
 	DisablePathNormalizing:   true,
 }
 
-// RenderFunc ...
-type RenderFunc func(c *fiber.Ctx, out io.Writer) error
-
 // Config ...
 type Config struct {
 	// Filter defines a function to skip middleware.
@@ -41,13 +38,13 @@ type Config struct {
 	// Optional. Default: 401 Invalid or expired key
 	ErrorHandler fiber.ErrorHandler
 
-	// RenderFunc ...
-	RenderFunc RenderFunc
+	// DefaultHost defines the default host if there is no host defined for the fragment
+	DefaultHost string
 }
 
 func Template(config Config, name string, bind interface{}, layouts ...string) fiber.Handler {
 	// // Set default config
-	// cfg := configDefault(config)
+	cfg := configDefault(config)
 
 	return func(c *fiber.Ctx) error {
 		var err error
@@ -87,7 +84,7 @@ func Template(config Config, name string, bind interface{}, layouts ...string) f
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 
-		return Do(c, doc, "localhost:3000")
+		return Do(c, doc, cfg.DefaultHost)
 	}
 }
 
@@ -109,9 +106,11 @@ func Do(c *fiber.Ctx, doc *Document, addr string) error {
 			c.Request().CopyTo(req)
 
 			uri := fasthttp.AcquireURI()
-			uri.SetHost(addr)
-			uri.SetPath(f.Src())
+			uri.Parse(nil, []byte(f.src))
 
+			if len(uri.Host()) == 0 {
+				uri.SetHost(addr)
+			}
 			req.SetRequestURI(uri.String())
 
 			req.Header.Del(fiber.HeaderConnection)
@@ -129,6 +128,10 @@ func Do(c *fiber.Ctx, doc *Document, addr string) error {
 
 			res.Header.Del(fiber.HeaderConnection)
 			body := res.Body()
+
+			h := Header(string(res.Header.Peek("link")))
+			nodes := CreateNodes(h.Links())
+			doc.AppendHead(nodes...)
 
 			f.Element().ReplaceWithHtml(string(body))
 
@@ -184,6 +187,10 @@ func configDefault(config ...Config) Config {
 		cfg.ErrorHandler = func(c *fiber.Ctx, err error) error {
 			return nil
 		}
+	}
+
+	if cfg.DefaultHost == "" {
+		cfg.DefaultHost = "localhost:3000"
 	}
 
 	return cfg

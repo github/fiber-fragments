@@ -1,18 +1,34 @@
 package main
 
 import (
-	"log"
-	"net/http"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/template/html"
 )
 
 func main() {
-	fs := http.FileServer(http.Dir("."))
-	http.Handle("/", fs)
+	// Create a new engine
+	engine := html.New(".", ".html")
 
-	log.Println("Listening on :3000...")
-	err := http.ListenAndServe(":3000", nil)
+	// Pass the engine to the Views
+	app := fiber.New(fiber.Config{
+		Views: engine,
+	})
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	app.Get("/fragment1", func(c *fiber.Ctx) error {
+		c.Links("https://unpkg.com/react-dom@17/umd/react-dom.development.js", "script")
+
+		return c.Render("fragment1", fiber.Map{
+			"Title": "Example 1",
+		})
+	})
+
+	app.Get("/fragment2", func(c *fiber.Ctx) error {
+		c.Links("https://unpkg.com/react-dom@17/umd/react-dom.development.js", "script")
+
+		return c.Render("fragment2", fiber.Map{
+			"Title": "Example 2",
+		})
+	})
+
+	app.Listen(":3000")
 }

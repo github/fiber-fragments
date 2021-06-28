@@ -19,6 +19,38 @@ A `fragment` is hybrid-polymorphic (if this is a thing). On the server it is par
 
 ## Example
 
+Import the middleware package this is part of the Fiber web framework
+
+```go
+package main
+
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/template/html"
+
+	"github.com/github/fiber-fragments"
+)
+```
+
+After you initiate your Fiber app, you can plugin in the fragments middleware. The middleware draws the templates for the fragments to load from the template engine. Thus it supports using all [template](https://github.com/gofiber/template) engines supported by the Fiber team.
+
+```go
+	// Create a new engine
+	engine := html.New("./views", ".html")
+
+	// Pass the engine to the Views
+	app := fiber.New(fiber.Config{
+		Views: engine,
+	})
+
+  // Associates the route with a specific template with fragments to render
+	app.Get("/index", fragments.Template(fragments.Config{}, "index", fiber.Map{}, "layouts/main"))
+
+  // this would listen to port 8080
+	app.Listen(":8080")
+}
+```
+
 ```html
 <html>
 <head>
