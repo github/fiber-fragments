@@ -1,5 +1,6 @@
 {
   "name": "github/fiber-fragments",
+  "image": "mcr.microsoft.com/vscode/devcontainers/go:latest",
   "forwardPorts": [8080],
   "appPort": [8080],
   "portsAttributes": {
