@@ -63,24 +63,50 @@ app.Listen(":8080")
 
 ```
 
+## Benachmark(s)
+
+This is run on a MacBook Pro 16 inch locally.
+
 ```bash
-echo "GET http://localhost:8080/index" | vegeta attack -duration=5s -rate 1000 | tee results.bin | vegeta report
+echo "GET http://localhost:8080/index" | vegeta attack -duration=5s -rate 5000 | tee results.bin | vegeta report
   vegeta report -type=json results.bin > metrics.json
   cat results.bin | vegeta plot > plot.html
   cat results.bin | vegeta report -type="hist[0,100ms,200ms,300ms]"
 
-Requests      [total, rate, throughput]         5000, 1000.22, 995.30
-Duration      [total, attack, wait]             5.024s, 4.999s, 24.696ms
-Latencies     [min, mean, 50, 90, 95, 99, max]  24.338ms, 29.048ms, 25.207ms, 28.564ms, 33.894ms, 136.354ms, 148.563ms
-Bytes In      [total, mean]                     2860000, 572.00
+Requests      [total, rate, throughput]         25000, 5000.31, 5000.00
+Duration      [total, attack, wait]             5s, 5s, 308.721µs
+Latencies     [min, mean, 50, 90, 95, 99, max]  249.649µs, 454.319µs, 387.801µs, 702.347µs, 818.665µs, 1.054ms, 8.348ms
+Bytes In      [total, mean]                     19823055, 792.92
+Bytes Out     [total, mean]                     0, 0.00
+Success       [ratio]                           100.00%
+Status Codes  [code:count]                      200:25000
+Error Set:
+Bucket           #      %        Histogram
+[0s,     100ms]  25000  100.00%  ###########################################################################
+[100ms,  200ms]  0      0.00%
+[200ms,  300ms]  0      0.00%
+[300ms,  +Inf]   0      0.00%
+```
+
+Run in [GitHub Codespaces](https://github.com/features/codespaces) with a `standard` machine.
+
+```bash
+ echo "GET http://localhost:8080/index" | vegeta attack -duration=5s -rate 1000 | tee results.bin | vegeta report
+  vegeta report -type=json results.bin > metrics.json
+  cat results.bin | vegeta plot > plot.html
+  cat results.bin | vegeta report -type="hist[0,100ms,200ms,300ms]"
+
+Requests      [total, rate, throughput]         5000, 1000.21, 995.32
+Duration      [total, attack, wait]             5.024s, 4.999s, 24.593ms
+Latencies     [min, mean, 50, 90, 95, 99, max]  24.068ms, 27.935ms, 24.772ms, 26.248ms, 28.193ms, 132.136ms, 139.897ms
+Bytes In      [total, mean]                     3961608, 792.32
 Bytes Out     [total, mean]                     0, 0.00
 Success       [ratio]                           100.00%
 Status Codes  [code:count]                      200:5000
 Error Set:
 Bucket           #     %       Histogram
-[0s,     100ms]  4864  97.28%  ########################################################################
-[100ms,  200ms]  136   2.72%   ##
+[0s,     100ms]  4865  97.30%  ########################################################################
+[100ms,  200ms]  135   2.70%   ##
 [200ms,  300ms]  0     0.00%
 [300ms,  +Inf]   0     0.00%
-
 ```
