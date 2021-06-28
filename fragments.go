@@ -5,17 +5,23 @@
 package fragments
 
 import (
-	"bufio"
 	"bytes"
+	"fmt"
+	"html/template"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/gofiber/fiber/v2"
-
-	"github.com/github/fiber-fragments/document"
-	"github.com/github/fiber-fragments/resolver"
+	"github.com/valyala/fasthttp"
+	"golang.org/x/sync/errgroup"
 )
+
+var client = fasthttp.Client{
+	NoDefaultUserAgentHeader: true,
+	DisablePathNormalizing:   true,
+}
 
 // RenderFunc ...
 type RenderFunc func(c *fiber.Ctx, out io.Writer) error
@@ -37,13 +43,131 @@ type Config struct {
 
 	// RenderFunc ...
 	RenderFunc RenderFunc
-
-	// Client is a HTTP client to make the requests
-	Client *http.Client
 }
 
-// New ...
-func New(config ...Config) fiber.Handler {
+func Template(config Config, name string, bind interface{}, layouts ...string) fiber.Handler {
+	// // Set default config
+	// cfg := configDefault(config)
+
+	return func(c *fiber.Ctx) error {
+		var err error
+		var buf *bytes.Buffer = new(bytes.Buffer)
+
+		if c.App().Config().Views != nil {
+			// Render template based on global layout if exists
+			if len(layouts) == 0 && c.App().Config().ViewsLayout != "" {
+				layouts = []string{
+					c.App().Config().ViewsLayout,
+				}
+			}
+			// Render template from Views
+			if err := c.App().Config().Views.Render(buf, name, bind, layouts...); err != nil {
+				return err
+			}
+		} else {
+			// Render raw template using 'name' as filepath if no engine is set
+			var tmpl *template.Template
+			if _, err = readContent(buf, name); err != nil {
+				return err
+			}
+			// Parse template
+			if tmpl, err = template.New("").Parse(string(buf.Bytes())); err != nil {
+				return err
+			}
+			buf.Reset()
+			// Render template
+			if err = tmpl.Execute(buf, bind); err != nil {
+				return err
+			}
+		}
+
+		r := bytes.NewReader(buf.Bytes())
+		doc, err := NewDocument(r)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+		}
+
+		return Do(c, doc, "localhost:3000")
+	}
+}
+
+func Do(c *fiber.Ctx, doc *Document, addr string) error {
+	g, _ := errgroup.WithContext(c.Context())
+
+	ff, err := doc.Fragments()
+	if err != nil {
+		return err
+	}
+
+	for _, f := range ff {
+		f := f
+
+		g.Go(func() error {
+			req := fasthttp.AcquireRequest()
+			res := fasthttp.AcquireResponse()
+
+			c.Request().CopyTo(req)
+
+			uri := fasthttp.AcquireURI()
+			uri.SetHost(addr)
+			uri.SetPath(f.Src())
+
+			req.SetRequestURI(uri.String())
+
+			req.Header.Del(fiber.HeaderConnection)
+			if err := client.Do(req, res); err != nil {
+				return err
+			}
+
+			if err := client.Do(req, res); err != nil {
+				return err
+			}
+
+			if res.StatusCode() != http.StatusOK {
+				return fmt.Errorf("resolve: could not resolve fragment at %s", f.Src())
+			}
+
+			res.Header.Del(fiber.HeaderConnection)
+			body := res.Body()
+
+			f.Element().ReplaceWithHtml(string(body))
+
+			return nil
+		})
+	}
+
+	// this is sync, we wait for everything to resolve
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	// render the final output
+	html, err := doc.Document().Html()
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+
+	c.Response().Header.SetContentType(fiber.MIMETextHTMLCharsetUTF8)
+	c.Response().SetBody([]byte(html))
+
+	return nil
+}
+
+// readContent opens a named file and read content from it
+func readContent(rf io.ReaderFrom, name string) (n int64, err error) {
+	// Read file
+	f, err := os.Open(filepath.Clean(name))
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		err = f.Close()
+	}()
+	return rf.ReadFrom(f)
+}
+
+// Helper function to set default values
+func configDefault(config ...Config) Config {
 	// Init config
 	var cfg Config
 	if len(config) > 0 {
@@ -62,41 +186,5 @@ func New(config ...Config) fiber.Handler {
 		}
 	}
 
-	// Return middleware handler
-	return func(c *fiber.Ctx) error {
-		// Filter request to skop middleware
-		if cfg.Filter != nil && cfg.Filter(c) {
-			return c.Next()
-		}
-
-		var buf bytes.Buffer
-		t := bufio.NewWriter(&buf)
-
-		err := cfg.RenderFunc(c, t)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
-		}
-
-		d, err := goquery.NewDocumentFromReader(&buf)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
-		}
-
-		doc := document.NewDocument(d)
-
-		r := resolver.New()
-		err = r.WithContext(c.Context(), doc, c.Request())
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
-		}
-
-		html, err := doc.Document().Html()
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
-		}
-
-		c.Write([]byte(html))
-
-		return nil
-	}
+	return cfg
 }

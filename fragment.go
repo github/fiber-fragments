@@ -1,4 +1,4 @@
-package fragment
+package fragments
 
 import (
 	"strconv"
