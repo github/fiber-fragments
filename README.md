@@ -35,20 +35,19 @@ import (
 After you initiate your Fiber app, you can plugin in the fragments middleware. The middleware draws the templates for the fragments to load from the template engine. Thus it supports using all [template](https://github.com/gofiber/template) engines supported by the Fiber team.
 
 ```go
-	// Create a new engine
-	engine := html.New("./views", ".html")
+// Create a new engine
+engine := html.New("./views", ".html")
 
-	// Pass the engine to the Views
-	app := fiber.New(fiber.Config{
-		Views: engine,
-	})
+// Pass the engine to the Views
+app := fiber.New(fiber.Config{
+	Views: engine,
+})
 
-  // Associates the route with a specific template with fragments to render
-	app.Get("/index", fragments.Template(fragments.Config{}, "index", fiber.Map{}, "layouts/main"))
+// Associates the route with a specific template with fragments to render
+app.Get("/index", fragments.Template(fragments.Config{}, "index", fiber.Map{}, "layouts/main"))
 
-  // this would listen to port 8080
-	app.Listen(":8080")
-}
+// this would listen to port 8080
+app.Listen(":8080")
 ```
 
 ```html
