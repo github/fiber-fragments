@@ -65,7 +65,12 @@ app.Listen(":8080")
 
 ## Benachmark(s)
 
-This is run on a MacBook Pro 16 inch locally.
+This is run on a MacBook Pro 16 inch locally. It is the `example` run.
+
+* Parsing a local template with extrapolation with the fragments
+* Parsing the fragments
+* Doing fragments
+* Inlining results and adding `Link` header resources to the output
 
 ```bash
 echo "GET http://localhost:8080/index" | vegeta attack -duration=5s -rate 5000 | tee results.bin | vegeta report
