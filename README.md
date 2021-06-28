@@ -1,6 +1,6 @@
 # Fragments
 
-Proxy middleware for [Fiber](https://github.com/gofiber/fiber) allows to build microservice frontends.
+Fragments middleware for [Fiber](https://github.com/gofiber/fiber) allows to build microservice frontends.
 
 [Tailor](https://github.com/zalando/tailor) by Zalando is prior art.
 
