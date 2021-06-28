@@ -15,7 +15,7 @@ func main() {
 	})
 
 	app.Get("/fragment1", func(c *fiber.Ctx) error {
-		c.Links("https://unpkg.com/react-dom@17/umd/react-dom.development.js", "script")
+		c.Links("https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css", "stylesheet")
 
 		return c.Render("fragment1", fiber.Map{
 			"Title": "Example 1",
@@ -23,7 +23,7 @@ func main() {
 	})
 
 	app.Get("/fragment2", func(c *fiber.Ctx) error {
-		c.Links("https://unpkg.com/react-dom@17/umd/react-dom.development.js", "script")
+		c.Links("https://unpkg.com/react-dom@17/umd/react-dom.development.js", "script", "")
 
 		return c.Render("fragment2", fiber.Map{
 			"Title": "Example 2",

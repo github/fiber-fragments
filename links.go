@@ -87,7 +87,15 @@ func CreateNodes(links []Link) []*html.Node {
 
 	for _, s := range links {
 		attr := make([]html.Attribute, 0)
-		attr = append(attr, html.Attribute{Key: "src", Val: s.URL})
+
+		if s.Rel == "script" {
+			attr = append(attr, html.Attribute{Key: "src", Val: s.URL})
+		}
+
+		if s.Rel == "stylesheet" {
+			attr = append(attr, html.Attribute{Key: "href", Val: s.URL})
+			attr = append(attr, html.Attribute{Key: "rel", Val: s.Rel})
+		}
 
 		for k, p := range s.Params {
 			attr = append(attr, html.Attribute{Key: k, Val: p})
@@ -103,6 +111,11 @@ func CreateNodes(links []Link) []*html.Node {
 			node.DataAtom = atom.Script
 		}
 
+		if s.Rel == "stylesheet" {
+			node.Data = "link"
+			node.DataAtom = atom.Link
+		}
+
 		nodes = append(nodes, node)
 	}
 
@@ -110,7 +123,6 @@ func CreateNodes(links []Link) []*html.Node {
 }
 
 func parseParam(raw string) (key, val string) {
-
 	parts := strings.SplitN(raw, "=", 2)
 	if len(parts) == 1 {
 		return parts[0], ""
@@ -123,5 +135,4 @@ func parseParam(raw string) (key, val string) {
 	val = strings.Trim(parts[1], "\"")
 
 	return key, val
-
 }
