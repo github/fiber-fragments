@@ -107,9 +107,14 @@ func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 			req := fasthttp.AcquireRequest()
 			res := fasthttp.AcquireResponse()
 
+			defer fasthttp.ReleaseRequest(req)
+			defer fasthttp.ReleaseResponse(res)
+
 			c.Request().CopyTo(req)
 
 			uri := fasthttp.AcquireURI()
+			defer fasthttp.ReleaseURI(uri)
+
 			uri.Parse(nil, []byte(f.src))
 
 			if len(uri.Host()) == 0 {
