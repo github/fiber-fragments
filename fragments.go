@@ -29,24 +29,28 @@ type Config struct {
 	// Optional. Default: nil
 	Filter func(*fiber.Ctx) bool
 
-	// SuccessHandler defines a function which is executed for a valid key.
-	// Optional. Default: nil
-	SuccessHandler fiber.Handler
-
-	// ErrorHandler defines a function which is executed for an invalid key.
+	// ErrorHandler defines a function which is executed
 	// It may be used to define a custom error.
 	// Optional. Default: 401 Invalid or expired key
 	ErrorHandler fiber.ErrorHandler
 
-	// DefaultHost defines the default host if there is no host defined for the fragment
+	// DefaultHost defines the host to use,
+	// if no host is set on a fragment.
+	// Optional. Default: localhost:3000
 	DefaultHost string
 }
 
+// Template ...
 func Template(config Config, name string, bind interface{}, layouts ...string) fiber.Handler {
-	// // Set default config
+	// Set default config
 	cfg := configDefault(config)
 
 	return func(c *fiber.Ctx) error {
+		// Filter request to skip middleware
+		if cfg.Filter != nil && cfg.Filter(c) {
+			return c.Next()
+		}
+
 		var err error
 		var buf *bytes.Buffer = new(bytes.Buffer)
 
@@ -59,36 +63,36 @@ func Template(config Config, name string, bind interface{}, layouts ...string) f
 			}
 			// Render template from Views
 			if err := c.App().Config().Views.Render(buf, name, bind, layouts...); err != nil {
-				return err
+				return cfg.ErrorHandler(c, err)
 			}
 		} else {
 			// Render raw template using 'name' as filepath if no engine is set
 			var tmpl *template.Template
 			if _, err = readContent(buf, name); err != nil {
-				return err
+				return cfg.ErrorHandler(c, err)
 			}
 			// Parse template
 			if tmpl, err = template.New("").Parse(string(buf.Bytes())); err != nil {
-				return err
+				return cfg.ErrorHandler(c, err)
 			}
 			buf.Reset()
 			// Render template
 			if err = tmpl.Execute(buf, bind); err != nil {
-				return err
+				return cfg.ErrorHandler(c, err)
 			}
 		}
 
 		r := bytes.NewReader(buf.Bytes())
 		doc, err := NewDocument(r)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+			return cfg.ErrorHandler(c, err)
 		}
 
-		return Do(c, doc, cfg.DefaultHost)
+		return Do(c, cfg, doc)
 	}
 }
 
-func Do(c *fiber.Ctx, doc *Document, addr string) error {
+func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 	g, _ := errgroup.WithContext(c.Context())
 
 	ff, err := doc.Fragments()
@@ -109,7 +113,7 @@ func Do(c *fiber.Ctx, doc *Document, addr string) error {
 			uri.Parse(nil, []byte(f.src))
 
 			if len(uri.Host()) == 0 {
-				uri.SetHost(addr)
+				uri.SetHost(cfg.DefaultHost)
 			}
 			req.SetRequestURI(uri.String())
 
@@ -118,16 +122,26 @@ func Do(c *fiber.Ctx, doc *Document, addr string) error {
 				return err
 			}
 
-			if err := client.Do(req, res); err != nil {
+			t := f.Timeout()
+			if err := client.DoTimeout(req, res, t); err != nil {
 				return err
 			}
 
 			if res.StatusCode() != http.StatusOK {
+				// TODO: wrap in custom error
 				return fmt.Errorf("resolve: could not resolve fragment at %s", f.Src())
 			}
 
 			res.Header.Del(fiber.HeaderConnection)
+
+			contentEncoding := res.Header.Peek("Content-Encoding")
 			body := res.Body()
+			if bytes.EqualFold(contentEncoding, []byte("gzip")) {
+				body, err = res.BodyGunzip()
+				if err != nil {
+					return cfg.ErrorHandler(c, err)
+				}
+			}
 
 			h := Header(string(res.Header.Peek("link")))
 			nodes := CreateNodes(h.Links())
@@ -141,13 +155,13 @@ func Do(c *fiber.Ctx, doc *Document, addr string) error {
 
 	// this is sync, we wait for everything to resolve
 	if err := g.Wait(); err != nil {
-		return err
+		return cfg.ErrorHandler(c, err)
 	}
 
 	// render the final output
 	html, err := doc.Document().Html()
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+		return cfg.ErrorHandler(c, err)
 	}
 
 	c.Response().Header.SetContentType(fiber.MIMETextHTMLCharsetUTF8)
@@ -177,15 +191,9 @@ func configDefault(config ...Config) Config {
 		cfg = config[0]
 	}
 
-	if cfg.SuccessHandler == nil {
-		cfg.SuccessHandler = func(c *fiber.Ctx) error {
-			return c.Next()
-		}
-	}
-
 	if cfg.ErrorHandler == nil {
 		cfg.ErrorHandler = func(c *fiber.Ctx, err error) error {
-			return nil
+			return c.Status(fiber.StatusInternalServerError).SendString("cannot create response")
 		}
 	}
 

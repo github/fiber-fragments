@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/html"
 )
 
+// Document ...
 type Document struct {
 	doc *goquery.Document
 }
