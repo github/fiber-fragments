@@ -65,7 +65,7 @@ app.Listen(":8080")
 
 ```
 
-## Benachmark(s)
+## Benchmark(s)
 
 This is run on a MacBook Pro 16 inch locally. It is the `example` run.
 
