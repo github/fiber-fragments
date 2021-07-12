@@ -7,6 +7,14 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
+// Rel ...
+type Rel string
+
+const (
+	StyleSheet = "stylesheet"
+	Script     = "script"
+)
+
 // Link ...
 type Link struct {
 	URL    string
@@ -88,11 +96,11 @@ func CreateNodes(links []Link) []*html.Node {
 	for _, s := range links {
 		attr := make([]html.Attribute, 0)
 
-		if s.Rel == "script" {
+		if s.Rel == Script {
 			attr = append(attr, html.Attribute{Key: "src", Val: s.URL})
 		}
 
-		if s.Rel == "stylesheet" {
+		if s.Rel == StyleSheet {
 			attr = append(attr, html.Attribute{Key: "href", Val: s.URL})
 			attr = append(attr, html.Attribute{Key: "rel", Val: s.Rel})
 		}

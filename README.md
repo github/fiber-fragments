@@ -1,5 +1,11 @@
 # Fragments
 
+![Github Action](https://github.com/github/fiber-fragments/workflows/Test%20%26%20Build/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/github/fiber-fragments)](https://goreportcard.com/report/github.com/github/fiber-fragments)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Taylor Swift](https://img.shields.io/badge/secured%20by-taylor%20swift-brightgreen.svg)](https://twitter.com/SwiftOnSecurity)
+[![Volkswagen](https://auchenberg.github.io/volkswagen/volkswargen_ci.svg?v=1)](https://github.com/auchenberg/volkswagen)
+
 Fragments middleware for [Fiber](https://github.com/gofiber/fiber) enables building microservices for the frontend.
 
 A `<fragment>` symbolizes a part of a template that is served by a microservices. The middleware concurrently fetches those parts from the service and replaces it in the template. It supports `GET` and `POST` [HTTP methods](https://developer.mozilla.org/de/docs/Web/HTTP/Methods) to fetcht the content. Related resources like CSS or JavaScript are injected via the [HTTP `LINK` entity header field](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link). A `<fragment>` can occure in the [`body` element](https://developer.mozilla.org/de/docs/Web/HTML/Element/body) or the [`header` element](https://developer.mozilla.org/de/docs/Web/HTML/Element/header). See [Example](#example) to learn more about using fragments.

@@ -25,7 +25,7 @@ var client = fasthttp.Client{
 
 // Config ...
 type Config struct {
-	// Filter defines a function to skip middleware.
+	// Filter defines a function to skip the middleware.
 	// Optional. Default: nil
 	Filter func(*fiber.Ctx) bool
 
@@ -92,6 +92,8 @@ func Template(config Config, name string, bind interface{}, layouts ...string) f
 	}
 }
 
+// Do represents the core functionality of the middleware.
+// It resolves the fragments from a parsed template.
 func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 	g, _ := errgroup.WithContext(c.Context())
 
