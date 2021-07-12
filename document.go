@@ -41,7 +41,9 @@ func (d *Document) Fragments() ([]*Fragment, error) {
 	fragments.Each(func(i int, s *goquery.Selection) {
 		f := FromSelection(s)
 
-		ff = append(ff, f)
+		if !f.deferred {
+			ff = append(ff, f)
+		}
 	})
 
 	return ff, nil

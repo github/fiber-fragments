@@ -7,9 +7,6 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-// Rel ...
-type Rel string
-
 const (
 	StyleSheet = "stylesheet"
 	Script     = "script"

@@ -2,6 +2,7 @@ package fragments
 
 import (
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,9 +11,12 @@ import (
 
 // Fragment ...
 type Fragment struct {
-	src     string
-	timeout int64
-	method  string
+	src      string
+	timeout  int64
+	method   string
+	fallback string
+	primary  bool
+	deferred bool
 
 	once sync.Once
 	s    *goquery.Selection
@@ -27,6 +31,9 @@ func FromSelection(s *goquery.Selection) *Fragment {
 	src, _ := s.Attr("src")
 	f.src = src
 
+	fallback, _ := s.Attr("fallback")
+	f.fallback = fallback
+
 	method, _ := s.Attr("method")
 	f.method = method
 
@@ -37,12 +44,23 @@ func FromSelection(s *goquery.Selection) *Fragment {
 	t, _ := strconv.ParseInt(timeout, 10, 64)
 	f.timeout = t
 
+	deferred, ok := s.Attr("deferred")
+	f.deferred = ok && strings.ToUpper(deferred) != "FALSE"
+
+	primary, ok := s.Attr("primary")
+	f.primary = ok && strings.ToUpper(primary) != "FALSE"
+
 	return f
 }
 
 // Src ...
 func (f *Fragment) Src() string {
 	return f.src
+}
+
+// Fallback ...
+func (f *Fragment) Fallback() string {
+	return f.fallback
 }
 
 // Timeout ...
@@ -58,4 +76,14 @@ func (f *Fragment) Method() string {
 // Element ...
 func (f *Fragment) Element() *goquery.Selection {
 	return f.s
+}
+
+// Deferred ...
+func (f *Fragment) Deferred() bool {
+	return f.deferred
+}
+
+// Primary ...
+func (f *Fragment) Primary() bool {
+	return f.primary
 }

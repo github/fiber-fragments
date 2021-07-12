@@ -29,6 +29,14 @@ type Config struct {
 	// Optional. Default: nil
 	Filter func(*fiber.Ctx) bool
 
+	// FilterResponse defines a function to filter the responses
+	// from the fragment sources.
+	FilterResponse func(*fasthttp.Response) *fasthttp.Response
+
+	// FilterRequest defines a function to filter the request
+	// to the fragment sources.
+	FilterRequest func(*fasthttp.Request) *fasthttp.Request
+
 	// ErrorHandler defines a function which is executed
 	// It may be used to define a custom error.
 	// Optional. Default: 401 Invalid or expired key
@@ -134,6 +142,8 @@ func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 				return err
 			}
 
+			res = cfg.FilterResponse(res)
+
 			if res.StatusCode() != http.StatusOK {
 				// TODO: wrap in custom error
 				return fmt.Errorf("resolve: could not resolve fragment at %s", f.Src())
@@ -201,6 +211,18 @@ func configDefault(config ...Config) Config {
 	if cfg.ErrorHandler == nil {
 		cfg.ErrorHandler = func(c *fiber.Ctx, err error) error {
 			return c.Status(fiber.StatusInternalServerError).SendString("cannot create response")
+		}
+	}
+
+	if cfg.FilterResponse == nil {
+		cfg.FilterResponse = func(res *fasthttp.Response) *fasthttp.Response {
+			return res
+		}
+	}
+
+	if cfg.FilterRequest == nil {
+		cfg.FilterRequest = func(req *fasthttp.Request) *fasthttp.Request {
+			return req
 		}
 	}
 
