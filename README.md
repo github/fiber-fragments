@@ -1,12 +1,14 @@
 # Fragments
 
-Fragments middleware for [Fiber](https://github.com/gofiber/fiber) allows to build microservice frontends.
+Fragments middleware for [Fiber](https://github.com/gofiber/fiber) enables building microservices for the frontend.
 
-[Tailor](https://github.com/zalando/tailor) by Zalando is prior art.
+A `<fragment>` symbolizes a part of a template that is served by a microservices. The middleware concurrently fetches those parts from the service and replaces it in the template. It supports `GET` and `POST` [HTTP methods](https://developer.mozilla.org/de/docs/Web/HTTP/Methods) to fetcht the content. Related resources like CSS or JavaScript are injected via the [HTTP `LINK` entity header field](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link). A `<fragment>` can occure in the [`body` element](https://developer.mozilla.org/de/docs/Web/HTML/Element/body) or the [`header` element](https://developer.mozilla.org/de/docs/Web/HTML/Element/header). See [Example](#example) to learn more about using fragments.
+
+[Tailor](https://github.com/zalando/tailor) by Zalando is prior art for this middleware.
 
 ## Fragement(s)
 
-A `fragment` is hybrid-polymorphic (if this is a thing). On the server it is parsed and evaluate by the middleware. In the browser it is a web component that receives data.
+A `fragment` will be hybrid-polymorphic (if this is a thing). On the server it is parsed and evaluate by the middleware. 🦄 In the browser it will be a web component that received data from the middleware (this is still work in progress ⚠️).
 
 ### Server
 
