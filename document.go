@@ -38,6 +38,19 @@ func (d *Document) Document() *goquery.Document {
 	return d.doc
 }
 
+// Html is returning the final HTML output.
+func (d *Document) Html() (string, error) {
+	d.RLock()
+	defer d.RUnlock()
+
+	html, err := d.doc.Html()
+	if err != nil {
+		return "", err
+	}
+
+	return html, nil
+}
+
 // Fragments is returning the selection of fragments
 // from an HTML page.
 func (d *Document) Fragments() ([]*Fragment, error) {

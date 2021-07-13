@@ -175,8 +175,8 @@ func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 		return cfg.ErrorHandler(c, err)
 	}
 
-	// render the final output
-	html, err := doc.Document().Html()
+	// get final output
+	html, err := doc.Html()
 	if err != nil {
 		return cfg.ErrorHandler(c, err)
 	}
