@@ -9,23 +9,24 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// Fragment ...
+// Fragment is a <fragment> in the <header> or <body>
+// of a HTML page.
 type Fragment struct {
+	deferred bool
+	fallback string
+	method   string
+	primary  bool
 	src      string
 	timeout  int64
-	method   string
-	fallback string
-	primary  bool
-	deferred bool
 
 	once sync.Once
 	s    *goquery.Selection
 }
 
-// FromSelection ...
+// FromSelection creates a new fragment from a
+// fragment selection in the DOM.
 func FromSelection(s *goquery.Selection) *Fragment {
 	f := new(Fragment)
-
 	f.s = s
 
 	src, _ := s.Attr("src")
@@ -53,37 +54,38 @@ func FromSelection(s *goquery.Selection) *Fragment {
 	return f
 }
 
-// Src ...
+// Src is the URL for the fragment.
 func (f *Fragment) Src() string {
 	return f.src
 }
 
-// Fallback ...
+// Fallback is the fallback URL for the fragment.
 func (f *Fragment) Fallback() string {
 	return f.fallback
 }
 
-// Timeout ...
+// Timeout is the timeout for fetching the fragment.
 func (f *Fragment) Timeout() time.Duration {
 	return time.Duration(f.timeout)
 }
 
-// Method ...
+// Method is the HTTP method to use for fetching the fragment.
 func (f *Fragment) Method() string {
 	return f.method
 }
 
-// Element ...
+// Element is a pointer to the selected element in the DOM.
 func (f *Fragment) Element() *goquery.Selection {
 	return f.s
 }
 
-// Deferred ...
+// Deferred is deferring the fetching to the browser.
 func (f *Fragment) Deferred() bool {
 	return f.deferred
 }
 
-// Primary ...
+// Primary denotes a fragment as responsible for setting
+// the response code of the entire HTML page.
 func (f *Fragment) Primary() bool {
 	return f.primary
 }

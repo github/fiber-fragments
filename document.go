@@ -2,19 +2,26 @@ package fragments
 
 import (
 	"io"
+	"sync"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/gofiber/fiber/v2"
 	"golang.org/x/net/html"
 )
 
 // Document ...
 type Document struct {
-	doc *goquery.Document
+	doc        *goquery.Document
+	statusCode int
+
+	sync.RWMutex
 }
 
 // NewDocument ...
 func NewDocument(r io.Reader) (*Document, error) {
 	d := new(Document)
+	// set the default status code
+	d.statusCode = fiber.StatusOK
 
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
@@ -31,8 +38,12 @@ func (d *Document) Document() *goquery.Document {
 	return d.doc
 }
 
-// Fragments ...
+// Fragments is returning the selection of fragments
+// from an HTML page.
 func (d *Document) Fragments() ([]*Fragment, error) {
+	d.RLock()
+	defer d.RUnlock()
+
 	scripts := d.doc.Find("head script[type=fragment]")
 	fragments := d.doc.Find("fragment").AddSelection(scripts)
 
@@ -47,6 +58,22 @@ func (d *Document) Fragments() ([]*Fragment, error) {
 	})
 
 	return ff, nil
+}
+
+// SetStatusCode is setting the HTTP status code for the document.
+func (d *Document) SetStatusCode(status int) {
+	d.Lock()
+	defer d.Unlock() // could do this atomic
+
+	d.statusCode = status
+}
+
+// StatusCode is getting the HTTP status code for the document.
+func (d *Document) StatusCode() int {
+	d.RLock()
+	defer d.RUnlock()
+
+	return d.statusCode
 }
 
 // AppendHead ...

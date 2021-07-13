@@ -131,11 +131,7 @@ func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 				uri.SetHost(cfg.DefaultHost)
 			}
 			req.SetRequestURI(uri.String())
-
 			req.Header.Del(fiber.HeaderConnection)
-			if err := client.Do(req, res); err != nil {
-				return err
-			}
 
 			t := f.Timeout()
 			if err := client.DoTimeout(req, res, t); err != nil {
@@ -143,6 +139,10 @@ func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 			}
 
 			res = cfg.FilterResponse(res)
+
+			if f.primary {
+				doc.SetStatusCode(res.StatusCode())
+			}
 
 			if res.StatusCode() != http.StatusOK {
 				// TODO: wrap in custom error
@@ -181,6 +181,7 @@ func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 		return cfg.ErrorHandler(c, err)
 	}
 
+	c.Response().SetStatusCode(doc.StatusCode())
 	c.Response().Header.SetContentType(fiber.MIMETextHTMLCharsetUTF8)
 	c.Response().SetBody([]byte(html))
 
