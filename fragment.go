@@ -1,12 +1,17 @@
 package fragments
 
 import (
+	"bytes"
+	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/gofiber/fiber/v2"
+	"github.com/valyala/fasthttp"
 )
 
 // Fragment is a <fragment> in the <header> or <body>
@@ -18,6 +23,9 @@ type Fragment struct {
 	primary  bool
 	src      string
 	timeout  int64
+
+	body       string
+	statusCode int
 
 	once sync.Once
 	s    *goquery.Selection
@@ -66,7 +74,7 @@ func (f *Fragment) Fallback() string {
 
 // Timeout is the timeout for fetching the fragment.
 func (f *Fragment) Timeout() time.Duration {
-	return time.Duration(f.timeout)
+	return time.Duration(f.timeout) * time.Second
 }
 
 // Method is the HTTP method to use for fetching the fragment.
@@ -88,4 +96,71 @@ func (f *Fragment) Deferred() bool {
 // the response code of the entire HTML page.
 func (f *Fragment) Primary() bool {
 	return f.primary
+}
+
+// ResolveSrc ...
+func (f *Fragment) ResolveSrc() ResolverFunc {
+	return f.do(f.src)
+}
+
+// ResolveFallback ...
+func (f *Fragment) ResolveFallback() ResolverFunc {
+	return f.do(f.fallback)
+}
+
+func (f *Fragment) do(src string) ResolverFunc {
+	return func(c *fiber.Ctx, cfg Config) error {
+		req := fasthttp.AcquireRequest()
+		res := fasthttp.AcquireResponse()
+
+		defer fasthttp.ReleaseRequest(req)
+		defer fasthttp.ReleaseResponse(res)
+
+		c.Request().CopyTo(req)
+
+		uri := fasthttp.AcquireURI()
+		defer fasthttp.ReleaseURI(uri)
+
+		uri.Parse(nil, []byte(src))
+
+		if len(uri.Host()) == 0 {
+			uri.SetHost(cfg.DefaultHost)
+		}
+		req.SetRequestURI(uri.String())
+		req.Header.Del(fiber.HeaderConnection)
+
+		t := f.Timeout()
+		if err := client.DoTimeout(req, res, t); err != nil {
+			return err
+		}
+
+		res = cfg.FilterResponse(res)
+		f.statusCode = res.StatusCode()
+
+		if res.StatusCode() != http.StatusOK {
+			// TODO: wrap in custom error, to not replace
+			return fmt.Errorf("resolve: could not resolve fragment at %s", f.Src())
+		}
+
+		res.Header.Del(fiber.HeaderConnection)
+
+		contentEncoding := res.Header.Peek("Content-Encoding")
+		body := res.Body()
+
+		var err error
+		if bytes.EqualFold(contentEncoding, []byte("gzip")) {
+			body, err = res.BodyGunzip()
+			if err != nil {
+				return cfg.ErrorHandler(c, err)
+			}
+		}
+
+		// h := Header(string(res.Header.Peek("link")))
+		// nodes := CreateNodes(h.Links())
+		// doc.AppendHead(nodes...)
+
+		f.Element().ReplaceWithHtml(string(body))
+
+		return nil
+	}
 }

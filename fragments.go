@@ -6,16 +6,13 @@ package fragments
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
-	"golang.org/x/sync/errgroup"
 )
 
 var client = fasthttp.Client{
@@ -103,76 +100,10 @@ func Template(config Config, name string, bind interface{}, layouts ...string) f
 // Do represents the core functionality of the middleware.
 // It resolves the fragments from a parsed template.
 func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
-	g, _ := errgroup.WithContext(c.Context())
-
-	ff, err := doc.Fragments()
+	r := NewResolver()
+	err := r.Resolve(c, cfg, doc)
 	if err != nil {
 		return err
-	}
-
-	for _, f := range ff {
-		f := f
-
-		g.Go(func() error {
-			req := fasthttp.AcquireRequest()
-			res := fasthttp.AcquireResponse()
-
-			defer fasthttp.ReleaseRequest(req)
-			defer fasthttp.ReleaseResponse(res)
-
-			c.Request().CopyTo(req)
-
-			uri := fasthttp.AcquireURI()
-			defer fasthttp.ReleaseURI(uri)
-
-			uri.Parse(nil, []byte(f.src))
-
-			if len(uri.Host()) == 0 {
-				uri.SetHost(cfg.DefaultHost)
-			}
-			req.SetRequestURI(uri.String())
-			req.Header.Del(fiber.HeaderConnection)
-
-			t := f.Timeout()
-			if err := client.DoTimeout(req, res, t); err != nil {
-				return err
-			}
-
-			res = cfg.FilterResponse(res)
-
-			if f.primary {
-				doc.SetStatusCode(res.StatusCode())
-			}
-
-			if res.StatusCode() != http.StatusOK {
-				// TODO: wrap in custom error
-				return fmt.Errorf("resolve: could not resolve fragment at %s", f.Src())
-			}
-
-			res.Header.Del(fiber.HeaderConnection)
-
-			contentEncoding := res.Header.Peek("Content-Encoding")
-			body := res.Body()
-			if bytes.EqualFold(contentEncoding, []byte("gzip")) {
-				body, err = res.BodyGunzip()
-				if err != nil {
-					return cfg.ErrorHandler(c, err)
-				}
-			}
-
-			h := Header(string(res.Header.Peek("link")))
-			nodes := CreateNodes(h.Links())
-			doc.AppendHead(nodes...)
-
-			f.Element().ReplaceWithHtml(string(body))
-
-			return nil
-		})
-	}
-
-	// this is sync, we wait for everything to resolve
-	if err := g.Wait(); err != nil {
-		return cfg.ErrorHandler(c, err)
 	}
 
 	// get final output
