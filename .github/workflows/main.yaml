@@ -11,6 +11,17 @@ on:
     - main
 
 jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.29
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -22,11 +33,6 @@ jobs:
 
       - name: Static Check
         run: GOBIN=$PWD/bin go install honnef.co/go/tools/cmd/staticcheck && ./bin/staticcheck ./...
-
-      - name: Run Linting
-        uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.29
 
       - name: Run Tests
         run: go test -cover -p 1 -race -v ./...
