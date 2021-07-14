@@ -53,6 +53,9 @@ func (r *Resolver) run(c *fiber.Ctx, cfg Config, fn ResolverFunc) {
 	go func() {
 		defer r.wg.Done()
 
-		fn(c, cfg) // ignoring errors for now
+		err := fn(c, cfg)
+		if err != nil {
+			return // ignoring errors for now
+		}
 	}()
 }

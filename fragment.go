@@ -139,7 +139,9 @@ func (f *Fragment) do(c *fiber.Ctx, cfg Config, src string) error {
 	uri := fasthttp.AcquireURI()
 	defer fasthttp.ReleaseURI(uri)
 
-	uri.Parse(nil, []byte(src))
+	if err := uri.Parse(nil, []byte(src)); err != nil {
+		return err
+	}
 
 	if len(uri.Host()) == 0 {
 		uri.SetHost(cfg.DefaultHost)

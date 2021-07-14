@@ -18,5 +18,7 @@ func main() {
 
 	app.Get("/index", fragments.Template(fragments.Config{}, "index", fiber.Map{}, "layouts/main"))
 
-	app.Listen(":8080")
+	if err := app.Listen(":8080"); err != nil {
+		panic(err)
+	}
 }
