@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -25,12 +24,10 @@ type Fragment struct {
 	src      string
 	timeout  int64
 
-	body       string
 	statusCode int
 	head       []*html.Node
 
-	once sync.Once
-	s    *goquery.Selection
+	s *goquery.Selection
 }
 
 // FromSelection creates a new fragment from a

@@ -82,7 +82,7 @@ func Template(config Config, name string, bind interface{}, layouts ...string) f
 				return cfg.ErrorHandler(c, err)
 			}
 			// Parse template
-			if tmpl, err = template.New("").Parse(string(buf.Bytes())); err != nil {
+			if tmpl, err = template.New("").Parse(buf.String()); err != nil {
 				return cfg.ErrorHandler(c, err)
 			}
 			buf.Reset()
