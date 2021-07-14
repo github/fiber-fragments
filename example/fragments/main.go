@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html"
 )
@@ -25,8 +27,26 @@ func main() {
 	app.Get("/fragment2", func(c *fiber.Ctx) error {
 		c.Links("https://unpkg.com/react-dom@17/umd/react-dom.development.js", "script", "")
 
+		c.Response().SetStatusCode(403)
+
 		return c.Render("fragment2", fiber.Map{
 			"Title": "Example 2",
+		})
+	})
+
+	app.Get("/fragment3", func(c *fiber.Ctx) error {
+		timer1 := time.NewTimer(90 * time.Second)
+
+		<-timer1.C // wait here for fallback
+
+		return c.Render("fragment2", fiber.Map{
+			"Title": "Example 2",
+		})
+	})
+
+	app.Get("/fallback", func(c *fiber.Ctx) error {
+		return c.Render("fallback", fiber.Map{
+			"Title": "Fallback",
 		})
 	})
 

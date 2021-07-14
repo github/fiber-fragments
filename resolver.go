@@ -1,10 +1,10 @@
 package fragments
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/net/html"
 )
 
 // Resolver ...
@@ -21,19 +21,30 @@ func NewResolver() *Resolver {
 type ResolverFunc func(c *fiber.Ctx, cfg Config) error
 
 // Resolve blocks until all fragments have been called.
-func (r *Resolver) Resolve(c *fiber.Ctx, cfg Config, doc *Document) error {
+func (r *Resolver) Resolve(c *fiber.Ctx, cfg Config, doc *Document) (int, []*html.Node, error) {
+	statusCode := fiber.StatusOK
+	head := make([]*html.Node, 0)
+
 	ff, err := doc.Fragments()
 	if err != nil {
-		return err
+		return statusCode, head, err
 	}
 
 	for _, f := range ff {
-		r.run(c, cfg, f.ResolveSrc())
+		r.run(c, cfg, f.Resolve())
 	}
 
 	r.wg.Wait()
 
-	return nil
+	for _, f := range ff {
+		if f.Primary() && f.statusCode != 0 {
+			statusCode = f.statusCode
+		}
+
+		head = append(head, f.Links()...)
+	}
+
+	return statusCode, head, nil
 }
 
 func (r *Resolver) run(c *fiber.Ctx, cfg Config, fn ResolverFunc) {
@@ -42,9 +53,6 @@ func (r *Resolver) run(c *fiber.Ctx, cfg Config, fn ResolverFunc) {
 	go func() {
 		defer r.wg.Done()
 
-		err := fn(c, cfg)
-		if err != nil {
-			fmt.Println(err)
-		}
+		fn(c, cfg) // ignoring errors for now
 	}()
 }

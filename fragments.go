@@ -13,6 +13,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
+	"golang.org/x/net/html"
 )
 
 var client = fasthttp.Client{
@@ -38,6 +39,10 @@ type Config struct {
 	// It may be used to define a custom error.
 	// Optional. Default: 401 Invalid or expired key
 	ErrorHandler fiber.ErrorHandler
+
+	// FilterHead defines a function to filter the new
+	// nodes in the <head> of the document passed by the LINK header entity.
+	FilterHead func([]*html.Node) []*html.Node
 
 	// DefaultHost defines the host to use,
 	// if no host is set on a fragment.
@@ -101,10 +106,13 @@ func Template(config Config, name string, bind interface{}, layouts ...string) f
 // It resolves the fragments from a parsed template.
 func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 	r := NewResolver()
-	err := r.Resolve(c, cfg, doc)
+	statusCode, head, err := r.Resolve(c, cfg, doc)
 	if err != nil {
 		return err
 	}
+
+	// append all head nodes
+	doc.AppendHead(cfg.FilterHead(head)...)
 
 	// get final output
 	html, err := doc.Html()
@@ -112,7 +120,7 @@ func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 		return cfg.ErrorHandler(c, err)
 	}
 
-	c.Response().SetStatusCode(doc.StatusCode())
+	c.Response().SetStatusCode(statusCode)
 	c.Response().Header.SetContentType(fiber.MIMETextHTMLCharsetUTF8)
 	c.Response().SetBody([]byte(html))
 
@@ -160,6 +168,12 @@ func configDefault(config ...Config) Config {
 
 	if cfg.DefaultHost == "" {
 		cfg.DefaultHost = "localhost:3000"
+	}
+
+	if cfg.FilterHead == nil {
+		cfg.FilterHead = func(nodes []*html.Node) []*html.Node {
+			return nodes
+		}
 	}
 
 	return cfg

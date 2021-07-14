@@ -12,6 +12,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
+	"golang.org/x/net/html"
 )
 
 // Fragment is a <fragment> in the <header> or <body>
@@ -26,6 +27,7 @@ type Fragment struct {
 
 	body       string
 	statusCode int
+	head       []*html.Node
 
 	once sync.Once
 	s    *goquery.Selection
@@ -58,6 +60,8 @@ func FromSelection(s *goquery.Selection) *Fragment {
 
 	primary, ok := s.Attr("primary")
 	f.primary = ok && strings.ToUpper(primary) != "FALSE"
+
+	f.head = make([]*html.Node, 0)
 
 	return f
 }
@@ -98,69 +102,85 @@ func (f *Fragment) Primary() bool {
 	return f.primary
 }
 
-// ResolveSrc ...
-func (f *Fragment) ResolveSrc() ResolverFunc {
-	return f.do(f.src)
+// Links returns the new nodes that go in the head via
+// the LINK HTTP header entity.
+func (f *Fragment) Links() []*html.Node {
+	return f.head
 }
 
-// ResolveFallback ...
-func (f *Fragment) ResolveFallback() ResolverFunc {
-	return f.do(f.fallback)
-}
-
-func (f *Fragment) do(src string) ResolverFunc {
+// Resolve is resolving all needed data, setting headers
+// and the status code.
+func (f *Fragment) Resolve() ResolverFunc {
 	return func(c *fiber.Ctx, cfg Config) error {
-		req := fasthttp.AcquireRequest()
-		res := fasthttp.AcquireResponse()
-
-		defer fasthttp.ReleaseRequest(req)
-		defer fasthttp.ReleaseResponse(res)
-
-		c.Request().CopyTo(req)
-
-		uri := fasthttp.AcquireURI()
-		defer fasthttp.ReleaseURI(uri)
-
-		uri.Parse(nil, []byte(src))
-
-		if len(uri.Host()) == 0 {
-			uri.SetHost(cfg.DefaultHost)
-		}
-		req.SetRequestURI(uri.String())
-		req.Header.Del(fiber.HeaderConnection)
-
-		t := f.Timeout()
-		if err := client.DoTimeout(req, res, t); err != nil {
+		err := f.do(c, cfg, f.src)
+		if err == nil {
 			return err
 		}
 
-		res = cfg.FilterResponse(res)
-		f.statusCode = res.StatusCode()
-
-		if res.StatusCode() != http.StatusOK {
-			// TODO: wrap in custom error, to not replace
-			return fmt.Errorf("resolve: could not resolve fragment at %s", f.Src())
+		if err != fasthttp.ErrTimeout {
+			return err
 		}
 
-		res.Header.Del(fiber.HeaderConnection)
-
-		contentEncoding := res.Header.Peek("Content-Encoding")
-		body := res.Body()
-
-		var err error
-		if bytes.EqualFold(contentEncoding, []byte("gzip")) {
-			body, err = res.BodyGunzip()
-			if err != nil {
-				return cfg.ErrorHandler(c, err)
-			}
+		err = f.do(c, cfg, f.fallback)
+		if err != nil {
+			return err
 		}
-
-		// h := Header(string(res.Header.Peek("link")))
-		// nodes := CreateNodes(h.Links())
-		// doc.AppendHead(nodes...)
-
-		f.Element().ReplaceWithHtml(string(body))
 
 		return nil
 	}
+}
+
+func (f *Fragment) do(c *fiber.Ctx, cfg Config, src string) error {
+	req := fasthttp.AcquireRequest()
+	res := fasthttp.AcquireResponse()
+
+	defer fasthttp.ReleaseRequest(req)
+	defer fasthttp.ReleaseResponse(res)
+
+	c.Request().CopyTo(req)
+
+	uri := fasthttp.AcquireURI()
+	defer fasthttp.ReleaseURI(uri)
+
+	uri.Parse(nil, []byte(src))
+
+	if len(uri.Host()) == 0 {
+		uri.SetHost(cfg.DefaultHost)
+	}
+	req.SetRequestURI(uri.String())
+	req.Header.Del(fiber.HeaderConnection)
+
+	t := f.Timeout()
+	if err := client.DoTimeout(req, res, t); err != nil {
+		return err
+	}
+
+	res = cfg.FilterResponse(res)
+	f.statusCode = res.StatusCode()
+
+	if res.StatusCode() != http.StatusOK {
+		// TODO: wrap in custom error, to not replace
+		return fmt.Errorf("resolve: could not resolve fragment at %s", f.Src())
+	}
+
+	res.Header.Del(fiber.HeaderConnection)
+
+	contentEncoding := res.Header.Peek("Content-Encoding")
+	body := res.Body()
+
+	var err error
+	if bytes.EqualFold(contentEncoding, []byte("gzip")) {
+		body, err = res.BodyGunzip()
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
+		}
+	}
+
+	h := Header(string(res.Header.Peek("link")))
+	nodes := CreateNodes(h.Links())
+	f.head = append(f.head, nodes...)
+
+	f.s.ReplaceWithHtml(string(body))
+
+	return nil
 }
