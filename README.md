@@ -1,6 +1,6 @@
 # Fragments
 
-![Github Action](https://github.com/github/fiber-fragments/workflows/Test%20%26%20Build/badge.svg)
+[![main](https://github.com/github/fiber-fragments/actions/workflows/main.yaml/badge.svg)](https://github.com/github/fiber-fragments/actions/workflows/main.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/github/fiber-fragments)](https://goreportcard.com/report/github.com/github/fiber-fragments)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Taylor Swift](https://img.shields.io/badge/secured%20by-taylor%20swift-brightgreen.svg)](https://twitter.com/SwiftOnSecurity)
