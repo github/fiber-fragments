@@ -101,3 +101,7 @@ Bucket           #      %        Histogram
 [200ms,  300ms]  0      0.00%
 [300ms,  +Inf]   0      0.00%
 ```
+
+## License
+
+[MIT](/MIT)
