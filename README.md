@@ -14,7 +14,7 @@ A `<fragment>` symbolizes a part of a template that can be served by a singular 
 
 ## Fragement(s)
 
-A `fragment` will be hybrid-polymorphic (if this is a thing). On the server it is parsed and evaluate by the middleware. 🦄 In the browser it will be a web component that received data from the middleware (this is still work in progress ⚠️).
+A `fragment` will be hybrid-polymorphic (if this is a thing). On the server it is parsed and evaluate by the middleware. 🦄 In the browser it will be a web component that received data from the middleware (**this is still work in progress ⚠️**).
 
 ### Server
 
