@@ -23,6 +23,8 @@ type Fragment struct {
 	primary  bool
 	src      string
 	timeout  int64
+	ref      string
+	id       string
 
 	statusCode int
 	head       []*html.Node
@@ -103,6 +105,17 @@ func (f *Fragment) Primary() bool {
 // the LINK HTTP header entity.
 func (f *Fragment) Links() []*html.Node {
 	return f.head
+}
+
+// ID returns the identifier of the fragment.
+func (f *Fragment) ID() string {
+	return f.id
+}
+
+// Ref returns the id of the fragment that this
+// fragment references. This is a forward reference.
+func (f *Fragment) Ref() string {
+	return f.ref
 }
 
 // Resolve is resolving all needed data, setting headers
