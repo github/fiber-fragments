@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 // Fragment is a <fragment> in the <header> or <body>
@@ -202,7 +203,23 @@ func (f *Fragment) do(c *fiber.Ctx, cfg Config, src string) error {
 	nodes := CreateNodes(h.Links())
 	f.head = append(f.head, nodes...)
 
-	f.s.ReplaceWithHtml(string(body))
+	root := &html.Node{
+		Type:     html.ElementNode,
+		DataAtom: atom.Body,
+		Data:     "body",
+	}
+
+	doc, err := NewDocument(bytes.NewReader(body), root)
+	if err != nil {
+		return err
+	}
+
+	html, err := doc.Html()
+	if err != nil {
+		return err
+	}
+
+	f.s.ReplaceWithHtml(html)
 
 	return nil
 }

@@ -39,8 +39,20 @@ func main() {
 
 		<-timer1.C // wait here for fallback
 
-		return c.Render("fragment2", fiber.Map{
-			"Title": "Example 2",
+		return c.Render("fragment3", fiber.Map{
+			"Title": "Example 3",
+		})
+	})
+
+	app.Get("/fragment4", func(c *fiber.Ctx) error {
+		return c.Render("fragment4", fiber.Map{
+			"Title": "Example 4",
+		})
+	})
+
+	app.Get("/fragment5", func(c *fiber.Ctx) error {
+		return c.Render("fragment5", fiber.Map{
+			"Title": "Example 5",
 		})
 	})
 

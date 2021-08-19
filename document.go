@@ -18,17 +18,20 @@ type Document struct {
 }
 
 // NewDocument ...
-func NewDocument(r io.Reader) (*Document, error) {
+func NewDocument(r io.Reader, root *html.Node) (*Document, error) {
 	d := new(Document)
 	// set the default status code
 	d.statusCode = fiber.StatusOK
 
-	doc, err := goquery.NewDocumentFromReader(r)
+	ns, err := html.ParseFragment(r, root)
 	if err != nil {
 		return nil, err
 	}
 
-	d.doc = doc
+	for _, n := range ns {
+		root.AppendChild(n)
+	}
+	d.doc = goquery.NewDocumentFromNode(root)
 
 	return d, nil
 }
