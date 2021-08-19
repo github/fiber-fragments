@@ -12,6 +12,7 @@ import (
 // Document ...
 type Document struct {
 	doc        *goquery.Document
+	html       *HtmlFragment
 	statusCode int
 
 	sync.RWMutex
@@ -23,15 +24,11 @@ func NewDocument(r io.Reader, root *html.Node) (*Document, error) {
 	// set the default status code
 	d.statusCode = fiber.StatusOK
 
-	ns, err := html.ParseFragment(r, root)
+	html, err := NewHtmlFragment(r, root)
 	if err != nil {
 		return nil, err
 	}
-
-	for _, n := range ns {
-		root.AppendChild(n)
-	}
-	d.doc = goquery.NewDocumentFromNode(root)
+	d.html = html
 
 	return d, nil
 }
@@ -46,7 +43,7 @@ func (d *Document) Html() (string, error) {
 	d.RLock()
 	defer d.RUnlock()
 
-	html, err := d.doc.Html()
+	html, err := d.html.Html()
 	if err != nil {
 		return "", err
 	}
@@ -76,6 +73,15 @@ func (d *Document) Fragments() ([]*Fragment, error) {
 	return ff, nil
 }
 
+// Fragments is returning the selection of fragments
+// from an HTML page.
+func (d *Document) HtmlFragment() *HtmlFragment {
+	d.RLock()
+	defer d.RUnlock()
+
+	return d.html
+}
+
 // SetStatusCode is setting the HTTP status code for the document.
 func (d *Document) SetStatusCode(status int) {
 	d.Lock()
@@ -93,7 +99,7 @@ func (d *Document) StatusCode() int {
 }
 
 // AppendHead ...
-func (d *Document) AppendHead(ns ...*html.Node) {
-	head := d.doc.Find("head")
-	head.AppendNodes(ns...)
-}
+// func (d *Document) AppendHead(ns ...*html.Node) {
+// 	head := d.doc.Find("head")
+// 	head.AppendNodes(ns...)
+// }

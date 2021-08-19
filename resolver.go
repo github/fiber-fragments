@@ -21,7 +21,7 @@ func NewResolver() *Resolver {
 type ResolverFunc func(c *fiber.Ctx, cfg Config) error
 
 // Resolve blocks until all fragments have been called.
-func (r *Resolver) Resolve(c *fiber.Ctx, cfg Config, doc *Document) (int, []*html.Node, error) {
+func (r *Resolver) Resolve(c *fiber.Ctx, cfg Config, doc *HtmlFragment) (int, []*html.Node, error) {
 	statusCode := fiber.StatusOK
 	head := make([]*html.Node, 0)
 
@@ -40,6 +40,13 @@ func (r *Resolver) Resolve(c *fiber.Ctx, cfg Config, doc *Document) (int, []*htm
 		if f.Primary() && f.statusCode != 0 {
 			statusCode = f.statusCode
 		}
+
+		html, err := f.HtmlFragment().Html()
+		if err != nil {
+			return statusCode, head, err
+		}
+
+		f.Element().ReplaceWithHtml(html)
 
 		head = append(head, f.Links()...)
 	}

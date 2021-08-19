@@ -2,10 +2,10 @@ package fragments
 
 import (
 	"bytes"
-	"fmt"
-	"net/http"
+	"io"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -15,6 +15,70 @@ import (
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
+
+// HtmlFragment is representation of HTML fragments.
+type HtmlFragment struct {
+	doc *goquery.Document
+	sync.RWMutex
+}
+
+// NewHtmlFragment creates a new fragment of HTML.
+func NewHtmlFragment(r io.Reader, root *html.Node) (*HtmlFragment, error) {
+	h := new(HtmlFragment)
+
+	ns, err := html.ParseFragment(r, root)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, n := range ns {
+		root.AppendChild(n)
+	}
+	h.doc = goquery.NewDocumentFromNode(root)
+
+	return h, nil
+}
+
+// Document get the full document representation
+// of the HTML fragment.
+func (h *HtmlFragment) Fragment() *goquery.Document {
+	return h.doc
+}
+
+// Fragments is returning the selection of fragments
+// from an HTML page.
+func (h *HtmlFragment) Fragments() ([]*Fragment, error) {
+	h.RLock()
+	defer h.RUnlock()
+
+	scripts := h.doc.Find("head script[type=fragment]")
+	fragments := h.doc.Find("fragment").AddSelection(scripts)
+
+	ff := make([]*Fragment, 0, fragments.Length())
+
+	fragments.Each(func(i int, s *goquery.Selection) {
+		f := FromSelection(s)
+
+		if !f.deferred {
+			ff = append(ff, f)
+		}
+	})
+
+	return ff, nil
+}
+
+// Html creates the HTML output of the created document.
+func (h *HtmlFragment) Html() (string, error) {
+	h.RLock()
+	defer h.RUnlock()
+
+	html, err := h.doc.Html()
+	if err != nil {
+		return "", err
+	}
+
+	return html, nil
+}
 
 // Fragment is a <fragment> in the <header> or <body>
 // of a HTML page.
@@ -32,6 +96,7 @@ type Fragment struct {
 	statusCode int
 	head       []*html.Node
 
+	f *HtmlFragment
 	s *goquery.Selection
 }
 
@@ -129,6 +194,11 @@ func (f *Fragment) ID() string {
 	return f.id
 }
 
+// HtmlFragment returns embedded fragments of HTML.
+func (f *Fragment) HtmlFragment() *HtmlFragment {
+	return f.f
+}
+
 // Resolve is resolving all needed data, setting headers
 // and the status code.
 func (f *Fragment) Resolve() ResolverFunc {
@@ -181,10 +251,10 @@ func (f *Fragment) do(c *fiber.Ctx, cfg Config, src string) error {
 	res = cfg.FilterResponse(res)
 	f.statusCode = res.StatusCode()
 
-	if res.StatusCode() != http.StatusOK {
-		// TODO: wrap in custom error, to not replace
-		return fmt.Errorf("resolve: could not resolve fragment at %s", f.Src())
-	}
+	// if res.StatusCode() != http.StatusOK {
+	// 	// TODO: wrap in custom error, to not replace
+	// 	return fmt.Errorf("resolve: could not resolve fragment at %s", f.Src())
+	// }
 
 	res.Header.Del(fiber.HeaderConnection)
 
@@ -209,17 +279,11 @@ func (f *Fragment) do(c *fiber.Ctx, cfg Config, src string) error {
 		Data:     "body",
 	}
 
-	doc, err := NewDocument(bytes.NewReader(body), root)
+	doc, err := NewHtmlFragment(bytes.NewReader(body), root)
 	if err != nil {
-		return err
+		return nil
 	}
-
-	html, err := doc.Html()
-	if err != nil {
-		return err
-	}
-
-	f.s.ReplaceWithHtml(html)
+	f.f = doc
 
 	return nil
 }
