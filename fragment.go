@@ -10,6 +10,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/net/html"
 )
@@ -23,6 +24,9 @@ type Fragment struct {
 	primary  bool
 	src      string
 	timeout  int64
+
+	id  string
+	ref string
 
 	statusCode int
 	head       []*html.Node
@@ -51,6 +55,15 @@ func FromSelection(s *goquery.Selection) *Fragment {
 	}
 	t, _ := strconv.ParseInt(timeout, 10, 64)
 	f.timeout = t
+
+	id, ok := s.Attr("id")
+	if !ok {
+		id = uuid.New().String()
+	}
+	f.id = id
+
+	ref, _ := s.Attr("ref")
+	f.ref = ref
 
 	deferred, ok := s.Attr("deferred")
 	f.deferred = ok && strings.ToUpper(deferred) != "FALSE"
@@ -103,6 +116,16 @@ func (f *Fragment) Primary() bool {
 // the LINK HTTP header entity.
 func (f *Fragment) Links() []*html.Node {
 	return f.head
+}
+
+// Ref represents the reference to another fragment
+func (f *Fragment) Ref() string {
+	return f.ref
+}
+
+// ID represents a unique id for the fragment
+func (f *Fragment) ID() string {
+	return f.id
 }
 
 // Resolve is resolving all needed data, setting headers
