@@ -41,6 +41,29 @@ func (r *Resolver) Resolve(c *fiber.Ctx, cfg Config, doc *HtmlFragment) (int, []
 			statusCode = f.statusCode
 		}
 
+		fw, err := f.HtmlFragment().Fragments()
+		if err != nil {
+			return statusCode, head, err
+		}
+
+		for _, fwr := range fw {
+			if fwr.Ref() == "" {
+				continue
+			}
+
+			ref, ok := ff[fwr.Ref()]
+			if !ok {
+				continue
+			}
+
+			html, err := ref.HtmlFragment().Html()
+			if err != nil {
+				return statusCode, head, err
+			}
+
+			fwr.Element().ReplaceWithHtml(html)
+		}
+
 		html, err := f.HtmlFragment().Html()
 		if err != nil {
 			return statusCode, head, err

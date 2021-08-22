@@ -47,20 +47,20 @@ func (h *HtmlFragment) Fragment() *goquery.Document {
 
 // Fragments is returning the selection of fragments
 // from an HTML page.
-func (h *HtmlFragment) Fragments() ([]*Fragment, error) {
+func (h *HtmlFragment) Fragments() (map[string]*Fragment, error) {
 	h.RLock()
 	defer h.RUnlock()
 
 	scripts := h.doc.Find("head script[type=fragment]")
 	fragments := h.doc.Find("fragment").AddSelection(scripts)
 
-	ff := make([]*Fragment, 0, fragments.Length())
+	ff := make(map[string]*Fragment)
 
 	fragments.Each(func(i int, s *goquery.Selection) {
 		f := FromSelection(s)
 
 		if !f.deferred {
-			ff = append(ff, f)
+			ff[f.ID()] = f
 		}
 	})
 

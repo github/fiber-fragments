@@ -22,13 +22,15 @@ A `fragment` will be hybrid-polymorphic (if this is a thing). On the server it i
 * `method` can be of `GET` (default) or `POST`.
 * `primary` denotes a fragment that sets the response code of the page
 * `id` is an optional unique identifier (optional)
+* `ref`is an optional forwar reference to an `id` (optional)
 * `timeout` timeout of a fragement to receive in milliseconds (default is `300`)
 * `deferred` is deferring the fetch to the browser
 * `fallback` is the fallback source in case of timeout/error on the current fragment
 
+
 ## Example
 
-Import the middleware package this is part of the Fiber web framework
+Import the middleware package this is part of the Fiber web framework.
 
 ```go
 package main
@@ -69,8 +71,9 @@ app.Listen(":8080")
     <fragment src="fragment1.html"></fragment>
 </body>
 </html>
-
 ```
+
+The `example` folder contains many examples. You can learn how to use a forward reference of content for fetching outer and inner content and replace either one.
 
 ## Benchmark(s)
 
