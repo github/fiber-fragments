@@ -107,4 +107,4 @@ Bucket           #      %        Histogram
 
 ## License
 
-[MIT](/MIT)
+[MIT](/LICENSE)
