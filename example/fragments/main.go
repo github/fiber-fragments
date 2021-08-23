@@ -56,6 +56,12 @@ func main() {
 		})
 	})
 
+	app.Get("/fragment6", func(c *fiber.Ctx) error {
+		return c.Render("fragment6", fiber.Map{
+			"Title": "Example 6",
+		})
+	})
+
 	app.Get("/fallback", func(c *fiber.Ctx) error {
 		return c.Render("fallback", fiber.Map{
 			"Title": "Fallback",
