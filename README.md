@@ -4,7 +4,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/github/fiber-fragments)](https://goreportcard.com/report/github.com/github/fiber-fragments)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Taylor Swift](https://img.shields.io/badge/secured%20by-taylor%20swift-brightgreen.svg)](https://twitter.com/SwiftOnSecurity)
-[![Volkswagen](https://auchenberg.github.io/volkswagen/volkswargen_ci.svg?v=1)](https://github.com/auchenberg/volkswagen)
 
 Fragments middleware for [Fiber](https://github.com/gofiber/fiber) enables building microservices for the frontend.
 
