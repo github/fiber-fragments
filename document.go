@@ -33,11 +33,6 @@ func NewDocument(r io.Reader, root *html.Node) (*Document, error) {
 	return d, nil
 }
 
-// Document ...
-func (d *Document) Document() *goquery.Document {
-	return d.doc
-}
-
 // Html is returning the final HTML output.
 func (d *Document) Html() (string, error) {
 	d.RLock()
@@ -97,9 +92,3 @@ func (d *Document) StatusCode() int {
 
 	return d.statusCode
 }
-
-// AppendHead ...
-// func (d *Document) AppendHead(ns ...*html.Node) {
-// 	head := d.doc.Find("head")
-// 	head.AppendNodes(ns...)
-// }

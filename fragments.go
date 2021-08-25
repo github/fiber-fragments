@@ -114,16 +114,16 @@ func Template(config Config, name string, bind interface{}, layouts ...string) f
 // It resolves the fragments from a parsed template.
 func Do(c *fiber.Ctx, cfg Config, doc *Document) error {
 	r := NewResolver()
-	statusCode, _, err := r.Resolve(c, cfg, doc.HtmlFragment())
+	statusCode, head, err := r.Resolve(c, cfg, doc.HtmlFragment())
 	if err != nil {
 		return err
 	}
 
-	// append all head nodes
-	// doc.AppendHead(cfg.FilterHead(head)...)
-
 	// get final output
-	html, err := doc.Html()
+	f := doc.HtmlFragment()
+	f.AppendHead(cfg.FilterHead(head)...)
+
+	html, err := f.Html()
 	if err != nil {
 		return cfg.ErrorHandler(c, err)
 	}

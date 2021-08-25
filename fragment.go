@@ -80,6 +80,12 @@ func (h *HtmlFragment) Html() (string, error) {
 	return html, nil
 }
 
+// AppendHead ...
+func (d *HtmlFragment) AppendHead(ns ...*html.Node) {
+	head := d.doc.Find("head")
+	head.AppendNodes(ns...)
+}
+
 // Fragment is a <fragment> in the <header> or <body>
 // of a HTML page.
 type Fragment struct {
