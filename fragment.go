@@ -2,7 +2,6 @@ package fragments
 
 import (
 	"bytes"
-	"io"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,17 +22,8 @@ type HtmlFragment struct {
 }
 
 // NewHtmlFragment creates a new fragment of HTML.
-func NewHtmlFragment(r io.Reader, root *html.Node) (*HtmlFragment, error) {
+func NewHtmlFragment(root *html.Node) (*HtmlFragment, error) {
 	h := new(HtmlFragment)
-
-	ns, err := html.ParseFragment(r, root)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, n := range ns {
-		root.AppendChild(n)
-	}
 	h.doc = goquery.NewDocumentFromNode(root)
 
 	return h, nil
@@ -285,7 +275,16 @@ func (f *Fragment) do(c *fiber.Ctx, cfg Config, src string) error {
 		Data:     "body",
 	}
 
-	doc, err := NewHtmlFragment(bytes.NewReader(body), root)
+	ns, err := html.ParseFragment(bytes.NewReader(body), root)
+	if err != nil {
+		return err
+	}
+
+	for _, n := range ns {
+		root.AppendChild(n)
+	}
+
+	doc, err := NewHtmlFragment(root)
 	if err != nil {
 		return nil
 	}

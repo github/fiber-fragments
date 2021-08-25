@@ -1,7 +1,6 @@
 package fragments
 
 import (
-	"io"
 	"sync"
 
 	"github.com/PuerkitoBio/goquery"
@@ -19,12 +18,12 @@ type Document struct {
 }
 
 // NewDocument ...
-func NewDocument(r io.Reader, root *html.Node) (*Document, error) {
+func NewDocument(root *html.Node) (*Document, error) {
 	d := new(Document)
 	// set the default status code
 	d.statusCode = fiber.StatusOK
 
-	html, err := NewHtmlFragment(r, root)
+	html, err := NewHtmlFragment(root)
 	if err != nil {
 		return nil, err
 	}

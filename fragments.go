@@ -14,7 +14,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/net/html"
-	"golang.org/x/net/html/atom"
 )
 
 var client = fasthttp.Client{
@@ -95,13 +94,12 @@ func Template(config Config, name string, bind interface{}, layouts ...string) f
 
 		r := bytes.NewReader(buf.Bytes())
 
-		root := &html.Node{
-			Type:     html.ElementNode,
-			DataAtom: atom.Html,
-			Data:     "html",
+		root, e := html.Parse(r)
+		if e != nil {
+			return cfg.ErrorHandler(c, err)
 		}
 
-		doc, err := NewDocument(r, root)
+		doc, err := NewDocument(root)
 		if err != nil {
 			return cfg.ErrorHandler(c, err)
 		}
