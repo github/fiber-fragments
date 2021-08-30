@@ -19,6 +19,7 @@ import (
 var client = fasthttp.Client{
 	NoDefaultUserAgentHeader: true,
 	DisablePathNormalizing:   true,
+	ReadBufferSize:           2 * 4096,
 }
 
 // Config ...
